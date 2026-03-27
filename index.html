@@ -4,59 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>梦境视频生成器 - Dream2Video</title>
+    
+    <!-- 1. 强制最先加载 SDK -->
+    <script src="https://lf-cdn.coze.com/obj/unpkg/flow-platform/chat-sdk/1.1.0-beta.0/index.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; min-height: 100vh; background: linear-gradient(180deg, #0f0f23 0%, #1a1a3e 50%, #2d2d5a 100%); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .stars { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
-        .star { position: absolute; width: 2px; height: 2px; background: rgba(255,255,255,0.3); border-radius: 50%; }
-        .container { position: relative; z-index: 10; padding: 20px; max-width: 600px; }
-        h1 { font-size: 3rem; margin-bottom: 20px; background: linear-gradient(45deg, #0070f3, #f81ce5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .input-card { background: rgba(15,15,35,0.6); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        textarea { width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 10px; color: white; padding: 15px; margin-bottom: 20px; outline: none; }
-        .btn { width: 100%; padding: 15px; border-radius: 30px; border: none; background: #0070f3; color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        body { font-family: -apple-system, sans-serif; min-height: 100vh; background: #0f0f23; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow: hidden; }
+        .stars { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle at center, #1a1a3e 0%, #0f0f23 100%); }
+        .star { position: absolute; width: 2px; height: 2px; background: rgba(255,255,255,0.4); border-radius: 50%; }
+        .container { position: relative; z-index: 10; padding: 20px; max-width: 500px; }
+        h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(45deg, #0070f3, #f81ce5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .input-card { background: rgba(255,255,255,0.05); backdrop-filter: blur(15px); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); margin-top: 20px; }
+        textarea { width: 100%; height: 120px; background: rgba(0,0,0,0.4); border: 1px solid #444; border-radius: 12px; color: #fff; padding: 15px; margin-bottom: 20px; outline: none; font-size: 16px; }
+        .btn-generate { width: 100%; padding: 16px; border-radius: 30px; border: none; background: linear-gradient(135deg, #7c7cd9, #a5a5f0); color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(124,124,217,0.3); }
     </style>
 </head>
 <body>
     <div class="stars" id="stars"></div>
     <div class="container">
         <h1>DreamLens AI</h1>
+        <p style="color: #a5a5d4; font-size: 1rem;">醒来后，记录你的梦境，AI 帮你视觉化奇幻场景</p>
         <div class="input-card">
-            <p style="margin-bottom: 15px; color: #a5a5d4;">醒来后，记录你的梦境，AI 帮你视觉化奇幻场景</p>
             <textarea id="dreamInput" placeholder="描述你的梦境..."></textarea>
-            <button class="btn" onclick="toggleCoze()">🎬 生成梦境视频</button>
+            <button class="btn-generate" id="realBtn">🎬 生成梦境视频</button>
         </div>
+        <p style="margin-top: 20px; color: #58a6ff; font-size: 0.9rem;">💡 提示：点击后请在弹出的对话框中查看</p>
     </div>
 
-    <!-- 核心脚本 -->
-    <script src="https://lf-cdn.coze.com/obj/unpkg/flow-platform/chat-sdk/1.1.0-beta.0/index.js"></script>
     <script>
-        // 初始化星空
-        for (let i = 0; i < 30; i++) {
+        // 生成简单的星星背景
+        const stars = document.getElementById('stars');
+        for (let i = 0; i < 40; i++) {
             const s = document.createElement('div');
             s.className = 'star';
             s.style.top = Math.random() * 100 + '%';
             s.style.left = Math.random() * 100 + '%';
-            document.getElementById('stars').appendChild(s);
+            stars.appendChild(s);
         }
 
-        // 极简初始化：直接让 SDK 运行
-        const cozeWebSDK = new CozeWebSDK.WebChatClient({
-            config: {
-                bot_id: '7621819035214413829', 
-            },
-            componentProps: {
-                title: 'DreamLens AI',
-            },
-        });
-
-        function toggleCoze() {
-            // 只要 SDK 加载了，这一行就必须管用
-            if (typeof CozeWebSDK !== 'undefined') {
-                cozeWebSDK.show();
-            } else {
-                alert("加载中，请稍后...");
+        // 2. 【核心修复】使用最基础的初始化方式
+        let app = null;
+        
+        // 等待 SDK 加载完成后再初始化
+        window.onload = function() {
+            try {
+                app = new CozeWebSDK.WebChatClient({
+                    config: {
+                        bot_id: '7621819035214413829', 
+                    },
+                    auth: {
+                        type: 'unauth', // 3. 【暴力破解】强行设置无需验证
+                    },
+                    componentProps: {
+                        title: 'DreamLens AI 实验室',
+                    },
+                });
+                console.log("AI 助手已就位");
+            } catch (e) {
+                console.error("SDK 加载失败", e);
             }
-        }
+        };
+
+        // 4. 绑定按钮：不管三七二十一，点就弹出
+        document.getElementById('realBtn').addEventListener('click', function() {
+            if (app) {
+                app.show();
+            } else {
+                alert("AI 助手正在穿越星空，请等 2 秒再点哦～");
+            }
+        });
     </script>
 </body>
 </html>
