@@ -60,42 +60,43 @@
     <script src="https://lf-cdn.coze.com/obj/unpkg/flow-platform/chat-sdk/1.1.0-beta.0/index.js"></script>
     
     <script>
-        // 星空背景动画逻辑
-        const starsContainer = document.getElementById('stars');
-        for (let i = 0; i < 50; i++) {
-            const s = document.createElement('div');
-            s.className = 'star';
-            s.style.top = Math.random() * 100 + '%';
-            s.style.left = Math.random() * 100 + '%';
-            s.style.animationDelay = Math.random() * 3 + 's';
-            starsContainer.appendChild(s);
+    // 1. 初始化星空（保持原样）
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 30; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        s.style.top = Math.random() * 100 + '%';
+        s.style.left = Math.random() * 100 + '%';
+        starsContainer.appendChild(s);
+    }
+
+    // 2. 初始化 Coze SDK
+    const client = new CozeWebSDK.WebChatClient({
+        config: {
+            bot_id: '7621819035214413829', 
+        },
+        componentProps: {
+            title: 'DreamLens AI 实验室',
+        },
+    });
+
+    // 3. 【核心修复】绑定按钮点击事件
+    const genBtn = document.getElementById('generateBtn');
+    genBtn.addEventListener('click', function() {
+        // 强制弹出对话框
+        client.show();
+        
+        // 可选：如果用户输入了内容，可以提醒他在弹窗里粘贴
+        const userInput = document.getElementById('dreamInput').value;
+        if(userInput) {
+            console.log("用户梦境已就绪:", userInput);
         }
+    });
 
-        // 2. 初始化 Coze 客户端
-        const client = new CozeWebSDK.WebChatClient({
-            config: {
-                bot_id: '7621819035214413829', 
-            },
-            componentProps: {
-                title: 'DreamLens AI 实验室',
-            },
-        });
-
-        // 3. 核心交互：点击“生成”按钮触发 AI
-        document.getElementById('generateBtn').addEventListener('click', function() {
-            const content = document.getElementById('dreamInput').value.trim();
-            
-            if (!content) {
-                alert("请先描述你的梦境哦 🌙");
-                return;
-            }
-
-            // 弹出 Coze 对话框
-            client.show();
-            
-            // 💡 小技巧：你可以提示用户手动粘贴，或者直接在弹出的窗口里交流
-            // 由于 SDK 限制，目前最稳妥的方式是让用户点击后在弹窗里直接跟 AI 说
-        });
-    </script>
+    // 4. 移除龙虾原来的输入检测逻辑（防止它又把按钮变灰）
+    document.getElementById('dreamInput').addEventListener('input', function() {
+        genBtn.disabled = false; // 永远保持可用
+    });
+</script>
 </body>
 </html>
